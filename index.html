@@ -196,8 +196,18 @@
             }
         };
 
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 500 });
-        html5QrcodeScanner.render(onScanSuccess);
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", {
+                fps: 10,
+                qrbox: 500,
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                },
+                facingMode: { exact: "environment" }  // ここで背面カメラを指定
+            }
+        );
+Scanner.render(onScanSuccess);
 
         const beep = () => {
             AUDIO.src = "https://tsubomilk.github.io/NRM-QRreader-sozai/enter.mp3";
