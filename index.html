@@ -17,6 +17,7 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            position: relative;
         }
 
         .logo {
@@ -33,10 +34,11 @@
             padding: 10px 20px;
             border: 2px solid #e74c3c;
             display: inline-block;
+            z-index: 2; /* 白透過レイヤーの上に表示 */
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.8);
             padding: 50px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -46,7 +48,10 @@
             gap: 10px;
             width: 100%;
             max-width: 1400px;
-            position: relative;
+            height: auto; /* 高さを自動調整 */
+            max-height: 90vh; /* 最大高さを画面の90%に設定 */
+            overflow-y: auto; /* スクロールを許可 */
+            margin: auto 0; /* 上下のマージンを自動で設定して中央揃え */
         }
 
         .content {
@@ -55,14 +60,17 @@
 
         #reader {
             width: 100%;
-            height: auto;
+            aspect-ratio: 1 / 1; /* リーダーを常に正方形に保つ */
             margin: 0 auto;
+            object-fit: cover; /* コンテンツが歪まないようにする */
+            z-index: 2; /* 白透過レイヤーの上に表示 */
         }
 
         #sound {
             margin-top: 10px;
             width: 150px;
             padding: 5px;
+            z-index: 2; /* 白透過レイヤーの上に表示 */
         }
 
         #result-container {
@@ -70,6 +78,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            z-index: 2; /* 白透過レイヤーの上に表示 */
         }
 
         .alert-info {
@@ -80,31 +89,36 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 2; /* 白透過レイヤーの上に表示 */
         }
 
         .button-group {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
             display: flex;
+            justify-content: space-between; /* ボタンを横に並べる */
             gap: 10px;
+            margin-top: 20px; /* ボタン上部のスペースを調整 */
+            flex-wrap: wrap; /* ボタンが2列以上に折り返すように */
+            z-index: 2; /* 白透過レイヤーの上に表示 */
         }
 
         .button-group form {
             flex: 1;
+            display: flex;
+            justify-content: center; /* ボタンを中央に配置 */
         }
 
         .button-group button {
-            width: 130px; /* 固定幅を指定 */
+            width: 150px; /* ボタンの固定幅 */
             border-radius: 5px;
             transition: background-color 0.3s ease;
+            z-index: 2; /* 白透過レイヤーの上に表示 */
         }
 
         .btn-primary:hover,
         .btn-activity:hover {
             background-color: grey;
             border-color: grey;
-            color: white; /* 文字色を白に固定 */
+            color: white; /* ホバー時の文字色を固定 */
         }
 
         .btn-activity {
@@ -118,9 +132,9 @@
                 padding: 20px;
                 gap: 5px;
                 width: 100vw;
-                height: 100vh;
                 max-width: 100vw;
-                max-height: 100vh;
+                height: 100vh; /* モバイルでも高さを画面いっぱいに設定 */
+                overflow-y: auto; /* モバイルでもスクロールを許可 */
             }
 
             .header {
@@ -139,17 +153,26 @@
             }
 
             .button-group {
-                bottom: 5px;
-                right: 5px;
-                flex-direction: column;
-                gap: 5px;
-                width: auto;
+                flex-direction: row; /* 小さい画面でも横並びを維持 */
+                gap: 10px;
             }
 
             .button-group button {
                 width: 100%; /* モバイル画面ではボタンをフル幅に */
             }
+
+            /* 画面全体に白透過レイヤーを追加 */
+            .overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(255, 255, 255, 0.7); /* 白透過 (70%) */
+                z-index: 1; /* 他の要素の下に配置 */
+            }
         }
+
     </style>
 </head>
 <body>
@@ -161,15 +184,15 @@
                 <div id="reader"></div>
             </div>
             <div id="result-container" class="text-center">
-                <div id="result" class="alert alert-info text-center" role="alert">ここにスキャン結果が表示されます</div>
+                <div id="result" class="alert alert-info text-center" role="alert"></div>
             </div>
         </div>
         <div class="button-group">
             <form method="POST" action ="<?= deployURL ?>">
-                <button type="submit" class="btn btn-primary" name="checkout" value="true">Check OUTへ</button>
+                <button type="submit" class="btn btn-activity" name="activity" value="true">Activityへ</button>
             </form>
             <form method="POST" action ="<?= deployURL ?>">
-                <button type="submit" class="btn btn-activity" name="activity" value="true">Activityへ</button>
+                <button type="submit" class="btn btn-primary" name="checkout" value="true">Check OUTへ</button>
             </form>
         </div>
     </div>
@@ -196,18 +219,8 @@
             }
         };
 
-        const html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", {
-                fps: 10,
-                qrbox: 500,
-                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-                experimentalFeatures: {
-                    useBarCodeDetectorIfSupported: true
-                },
-                facingMode: { exact: "environment" }  // ここで背面カメラを指定
-            }
-        );
-Scanner.render(onScanSuccess);
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 500 });
+        html5QrcodeScanner.render(onScanSuccess);
 
         const beep = () => {
             AUDIO.src = "https://tsubomilk.github.io/NRM-QRreader-sozai/enter.mp3";
